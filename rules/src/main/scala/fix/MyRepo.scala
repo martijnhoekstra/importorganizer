@@ -7,6 +7,8 @@ class MyRepo extends SemanticRule("MyRepo") {
 
   override def fix(implicit doc: SemanticDocument): Patch = {
 
+    val maxNamedImportees = 3
+
     def ancesters(trm: Tree): Stream[Tree] = trm.parent match {
       case None => Stream.empty
       case Some(parent) => parent #:: ancesters(parent)
@@ -186,7 +188,21 @@ class MyRepo extends SemanticRule("MyRepo") {
           impee <- imper.importees
         } yield impee
 
-        (old, orderImportBlock(replacement.toVector))
+        var grouped = replacement.toVector.flatMap(imprt => {
+            val byRef = imprt.importers.groupBy(imper => imper.ref)
+            byRef.map {
+              case (ref, importers) => {
+                val individuals = importers.flatMap(_.importees)
+                val target = if (individuals.length <= maxNamedImportees) {
+                  individuals
+                } else List(Importee.Wildcard)
+                Import(List(Importer(ref, individuals)))
+              }
+            }
+          })
+          
+        var ordered = orderImportBlock(grouped)
+        (old, ordered)
       }}
     }
 
