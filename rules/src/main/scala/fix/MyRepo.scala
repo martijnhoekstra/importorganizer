@@ -193,10 +193,10 @@ class MyRepo extends SemanticRule("MyRepo") {
             byRef.map {
               case (ref, importers) => {
                 val individuals = importers.flatMap(_.importees)
-                val target = if (individuals.length <= maxNamedImportees) {
+                val target: List[Importee] = if (individuals.length <= maxNamedImportees) {
                   individuals
-                } else List(Importee.Wildcard)
-                Import(List(Importer(ref, individuals)))
+                } else List(Importee.Wildcard())
+                Import(List(Importer(ref, target)))
               }
             }
           })
